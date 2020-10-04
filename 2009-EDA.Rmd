@@ -1,0 +1,116 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(readr)
+df <- read_csv("37135_2009_cleaned.csv")
+
+View(df)
+```
+
+```{r}
+
+#replace("Information not provided by applicant in mail, Internet, or telephone application",
+        #df$applicant_ethnicity_name,"NA")
+
+
+
+library(dplyr)
+library(ggplot2)
+df_ethnicity = df %>% group_by(applicant_ethnicity_name) %>%
+  summarise(CountOfEthnicity = n()) %>%
+  arrange(desc(CountOfEthnicity))
+
+ggplot(df_ethnicity, aes(x = reorder(applicant_ethnicity_name, CountOfEthnicity), y = CountOfEthnicity)) +
+  geom_bar(stat='identity',colour="white", fill ="#FFA07A") +
+  geom_text(aes(x = applicant_ethnicity_name, y = 1, label = paste0("(",round(CountOfEthnicity),")",sep="")),
+            hjust=0, vjust=.5, size = 4, colour = 'black', fontface = 'bold') +
+  labs(x = 'Applicant_Ethnicity', y = '% Loan Decision', title = 'Ethnicity Distribution') +
+  coord_flip() + 
+  theme_bw() + theme(plot.title = element_text(size = 12, face = "bold",hjust = 0.5))
+```
+
+```{r}
+applicant_ethnicity = df %>% group_by(approved,applicant_ethnicity_name) %>%
+  summarise(CountOfApproved = n()) %>%
+  arrange(desc(CountOfApproved))
+
+applicant_ethnicity2 = inner_join(applicant_ethnicity,df_ethnicity) %>%
+  mutate(percentage = (CountOfApproved/CountOfEthnicity) * 100 ) 
+
+ggplot(applicant_ethnicity2, aes(x = reorder(approved, percentage), y = percentage)) +
+  geom_bar(stat='identity',colour="white", fill ="#FFA07A") +facet_wrap(~ applicant_ethnicity_name) +
+  geom_text(aes(x = approved, y = 1, label = paste0("(",round(percentage),"%)",sep="")),
+            hjust=0, vjust=-5, size = 4, colour = 'black',
+            fontface = 'bold') +
+  labs(x = 'Approved', y = '% Loan Decision', title = 'Loan Decision and Ethnicity Distribution') +
+  coord_flip() + 
+  theme_bw() + theme(plot.title = element_text(size = 12, face = "bold",hjust = 0.5))
+```
+
+
+```{r}
+df_race = df %>% group_by(applicant_race_name_1) %>%
+  summarise(CountOfRace = n()) %>%
+  arrange(desc(CountOfRace))
+
+ggplot(df_race, aes(x = reorder(applicant_race_name_1, CountOfRace), y = CountOfRace)) +
+  geom_bar(stat='identity',colour="white", fill ="#FFA07A") +
+  geom_text(aes(x = applicant_race_name_1, y = 1, label = paste0("(",round(CountOfRace),")",sep="")),
+            hjust=0, vjust=.5, size = 4, colour = 'black', fontface = 'bold') +
+  labs(x = 'Applicant_Race', y = '% Loan Decision', title = 'Race Distribution') +
+  coord_flip() + 
+  theme_bw() + theme(plot.title = element_text(size = 12, face = "bold",hjust = 0.5))
+
+
+applicant_race = df %>% group_by(approved,applicant_race_name_1) %>%
+  summarise(CountOfApproved = n()) %>%
+  arrange(desc(CountOfApproved))
+
+applicant_race2 = inner_join(applicant_race,df_race) %>%
+  mutate(percentage = (CountOfApproved/CountOfRace) * 100 ) 
+
+ggplot(applicant_race2, aes(x = reorder(approved, percentage), y = percentage)) +
+  geom_bar(stat='identity',colour="white", fill ="#FFA07A") +facet_wrap(~ applicant_race_name_1) +
+  geom_text(aes(x = approved, y = 1, label = paste0("(",round(percentage),"%)",sep="")),
+            hjust=0, vjust=-3, size = 4, colour = 'black',
+            fontface = 'bold') +
+  labs(x = 'Approved', y = '% Loan Decision', title = 'Loan Decision and Race Distribution') +
+  coord_flip() + 
+  theme_bw() + theme(plot.title = element_text(size = 12, face = "bold",hjust = 0.5))
+```
+
+```{r}
+df_sex = df %>% group_by(applicant_sex_name) %>%
+  summarise(CountOfSex = n()) %>%
+  arrange(desc(CountOfSex))
+
+ggplot(df_sex, aes(x = reorder(applicant_sex_name, CountOfSex), y = CountOfSex)) +
+  geom_bar(stat='identity',colour="white", fill ="#FFA07A") +
+  geom_text(aes(x = applicant_sex_name, y = 1, label = paste0("(",round(CountOfSex),")",sep="")),
+            hjust=0, vjust=.5, size = 4, colour = 'black', fontface = 'bold') +
+  labs(x = 'Applicant_Sex', y = '% Loan Decision', title = 'Sex Distribution') +
+  coord_flip() + 
+  theme_bw() + theme(plot.title = element_text(size = 12, face = "bold",hjust = 0.5))
+
+
+
+applicant_sex = df %>% group_by(approved,applicant_sex_name) %>%
+  summarise(CountOfApproved = n()) %>%
+  arrange(desc(CountOfApproved))
+
+applicant_sex2 = inner_join(applicant_sex,df_sex) %>%
+  mutate(percentage = (CountOfApproved/CountOfSex) * 100 ) 
+
+ggplot(applicant_sex2, aes(x = reorder(approved, percentage), y = percentage)) +
+  geom_bar(stat='identity',colour="white", fill ="#FFA07A") +facet_wrap(~ applicant_sex_name) +
+  geom_text(aes(x = approved, y = 1, label = paste0("(",round(percentage),"%)",sep="")),
+            hjust=0, vjust=-5, size = 4, colour = 'black',
+            fontface = 'bold') +
+  labs(x = 'Approved', y = '% Loan Decision', title = 'Loan Decision and Sex Distribution') +
+  coord_flip() + 
+  theme_bw() + theme(plot.title = element_text(size = 12, face = "bold",hjust = 0.5))
+```
+

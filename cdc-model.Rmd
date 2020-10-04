@@ -72,7 +72,6 @@ summary(mod3)
 ```
 
 ```{r echo = FALSE}
-
 test = test[,-1]
 test = test[,-18]
 View(test)

@@ -1,0 +1,170 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(readr)
+df <- read_csv("county_371351.csv")
+#encoding
+df$purchaser_type = as.factor(df$purchaser_type)
+df$preapproval = as.factor(df$preapproval)
+df$loan_purpose = as.factor(df$loan_purpose)
+df$business_or_commercial_purpose = as.factor(df$business_or_commercial_purpose)
+df$hoepa_status = as.factor(df$hoepa_status)
+df$negative_amortization = as.factor(df$negative_amortization)
+df$interest_only_payment = as.factor(df$interest_only_payment)
+df$balloon_payment = as.factor(df$balloon_payment)
+df$other_nonamortizing_features = as.factor(df$other_nonamortizing_features)
+df$manufactured_home_secured_property_type= as.factor(df$manufactured_home_secured_property_type)
+df$manufactured_home_land_property_interest = as.factor(df$manufactured_home_land_property_interest)
+df$applicant_ethnicity_observed = as.factor(df$applicant_ethnicity_observed)
+df$applicant_sex_observed = as.factor(df$applicant_sex_observed)
+df$approved = as.factor(df$approved)
+
+df1 = na.omit(df)
+```
+
+```{r}
+#denial
+library(dplyr)
+library(ggplot2)
+df1$`denial_reason` = as.factor(df1$`denial_reason-1`)
+df_deny = df1 %>% group_by(`denial_reason-1`) %>%
+  summarise(CountOfDenial = n()) %>%
+  arrange(desc(CountOfDenial))
+
+ggplot(df_deny, aes(x = reorder(`denial_reason-1`, CountOfDenial), y = CountOfDenial)) +
+  geom_bar(stat='identity',colour="white", fill ="#02cfd2") +
+  labs(x = 'denial_reason', y = '% loan decision', title = 'Denial Distribution') +
+  geom_text(aes(label = paste0("(",CountOfDenial,")",sep="")),hjust=0.5, vjust=.5, size = 4, colour = 'black') +
+  coord_flip() + 
+  theme_bw()
+```
+
+```{r}
+#5.1 Ethnicity Distribution
+df_ethnicity = df1 %>% group_by(derived_ethnicity) %>%
+  summarise(CountOfEthnicity = n()) %>%
+  arrange(desc(CountOfEthnicity))
+
+ggplot(df_ethnicity, aes(x = reorder(derived_ethnicity, CountOfEthnicity), y = CountOfEthnicity)) +
+  geom_bar(stat='identity',colour="white", fill ="#F1C40F") +
+  geom_text(aes(x = derived_ethnicity, y = 1, label = paste0("(",round(CountOfEthnicity),")",sep="")),
+            hjust=0, vjust=.5, size = 4, colour = 'black', fontface = 'bold') +
+  labs(x = 'applicant_ethnicity', y = '% loan decision', title = 'Ethnicity Distribution') +
+  coord_flip() + 
+  theme_bw()
+```
+
+```{r}
+#5.2 Loan Decision and Ethnicity
+  
+applicant_ethnicity = df1 %>% group_by(approved,derived_ethnicity) %>%
+  summarise(CountOfApproved = n()) %>%
+  arrange(desc(CountOfApproved))
+
+applicant_ethnicity2 = inner_join(applicant_ethnicity,df_ethnicity) %>%
+  mutate(percentage = (CountOfApproved/CountOfEthnicity) * 100 ) 
+
+ggplot(applicant_ethnicity2, aes(x = reorder(approved, percentage), y = percentage)) +
+  geom_bar(stat='identity',colour="white", fill ="#FFA07A") +facet_wrap(~ derived_ethnicity) +
+  geom_text(aes(x = approved, y = 1, label = paste0("(",round(percentage),"%)",sep="")),
+            hjust=0, vjust=-5, size = 4, colour = 'black',
+            fontface = 'bold') +
+  labs(x = 'approved', y = '% loan decision', title = 'Loan Decision and Ethnicity Distribution') +
+  coord_flip() + 
+  theme_bw()
+```
+
+```{r}
+#Race Distribution
+df_race = df1 %>% group_by(derived_race) %>%
+  summarise(CountOfRace = n()) %>%
+  arrange(desc(CountOfRace))
+
+ggplot(df_race, aes(x = reorder(derived_race, CountOfRace), y = CountOfRace)) +
+  geom_bar(stat='identity',colour="white", fill ="#F1C40F") +
+  geom_text(aes(x = derived_race, y = 1, label = paste0("(",round(CountOfRace),")",sep="")),
+            hjust=0, vjust=.5, size = 4, colour = 'black', fontface = 'bold') +
+  labs(x = 'applicant_race', y = '% loan decision', title = 'Ethnicity Distribution') +
+  coord_flip() + 
+  theme_bw()
+```
+
+```{r}
+#Loan Decision and Race
+applicant_race = df1 %>% group_by(approved,derived_race) %>%
+  summarise(CountOfApproved = n()) %>%
+  arrange(desc(CountOfApproved))
+
+applicant_race2 = inner_join(applicant_race,df_race) %>%
+  mutate(percentage = (CountOfApproved/CountOfRace) * 100 ) 
+
+ggplot(applicant_race2, aes(x = reorder(approved, percentage), y = percentage)) +
+  geom_bar(stat='identity',colour="white", fill ="#FFA07A") +facet_wrap(~ derived_race) +
+  geom_text(aes(x = approved, y = 1, label = paste0("(",round(percentage),"%)",sep="")),
+            hjust=0, vjust=-3, size = 4, colour = 'black',
+            fontface = 'bold') +
+  labs(x = 'approved', y = '% loan decision', title = 'Loan Decision and Race Distribution') +
+  coord_flip() + 
+  theme_bw()
+```
+
+```{r}
+#6.1 Sex Distributino
+df_sex = df1 %>% group_by(derived_sex) %>%
+  summarise(CountOfSex = n()) %>%
+  arrange(desc(CountOfSex))
+
+ggplot(df_sex, aes(x = reorder(derived_sex, CountOfSex), y = CountOfSex)) +
+  geom_bar(stat='identity',colour="white", fill ="#F1C40F") +
+  geom_text(aes(x = derived_sex, y = 1, label = paste0("(",round(CountOfSex),")",sep="")),
+            hjust=0, vjust=.5, size = 4, colour = 'black', fontface = 'bold') +
+  labs(x = 'applicant_sex', y = '% loan decision', title = 'Sex Distribution') +
+  coord_flip() + 
+  theme_bw()
+```
+
+```{r}
+#6.2 Loan Decision and Sex
+applicant_sex = df1 %>% group_by(approved,derived_sex) %>%
+  summarise(CountOfApproved = n()) %>%
+  arrange(desc(CountOfApproved))
+
+applicant_sex2 = inner_join(applicant_sex,df_sex) %>%
+  mutate(percentage = (CountOfApproved/CountOfSex) * 100 ) 
+
+ggplot(applicant_sex2, aes(x = reorder(approved, percentage), y = percentage)) +
+  geom_bar(stat='identity',colour="white", fill ="#FFA07A") +facet_wrap(~ derived_sex) +
+  geom_text(aes(x = approved, y = 1, label = paste0("(",round(percentage),"%)",sep="")),
+            hjust=0, vjust=-5, size = 4, colour = 'black',
+            fontface = 'bold') +
+  labs(x = 'approved', y = '% loan decision', title = 'Loan Decision and Sex Distribution') +
+  coord_flip() + 
+  theme_bw()
+```
+
+```{r}
+#7 Income distribution
+df1 %>%
+  filter(approved == 1 ) %>%
+  ggplot(aes(income)) +
+  scale_x_continuous(limits = c(0, 400),breaks=seq(0,400,50)) +
+  geom_histogram(binwidth = 10,,fill = c("red")) +
+  labs(x = 'Income in Thousands', y = 'Count', title = 'Loan Originated Applicant Income distribution') +  theme_bw()
+```
+
+```{r}
+#8.2 Loan purpose types vs Decision
+library(ggplot2)
+library(dplyr)
+df1 %>%
+  filter(!is.na(loan_purpose)) %>%
+  group_by(loan_purpose,approved) %>%
+  summarise(CountLoanPurpose = n() ) %>%
+  ggplot(aes(x = loan_purpose,y = CountLoanPurpose,fill =(approved))) + geom_bar(stat='identity',colour="white") +
+  labs(x = 'Loan Purpose', y = 'Count', title = 'Loans Purpose Types Distribution with Decision') +
+  theme_bw()
+```
+

@@ -1,0 +1,170 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(readr)
+df <- read_csv("county_371351.csv")
+```
+
+```{r}
+#encoding
+df$purchaser_type = as.factor(df$purchaser_type)
+df$preapproval = as.factor(df$preapproval)
+df$loan_purpose = as.factor(df$loan_purpose)
+df$business_or_commercial_purpose = as.factor(df$business_or_commercial_purpose)
+df$hoepa_status = as.factor(df$hoepa_status)
+df$negative_amortization = as.factor(df$negative_amortization)
+df$interest_only_payment = as.factor(df$interest_only_payment)
+df$balloon_payment = as.factor(df$balloon_payment)
+df$other_nonamortizing_features = as.factor(df$other_nonamortizing_features)
+df$manufactured_home_secured_property_type= as.factor(df$manufactured_home_secured_property_type)
+df$manufactured_home_land_property_interest = as.factor(df$manufactured_home_land_property_interest)
+df$applicant_ethnicity_observed = as.factor(df$applicant_ethnicity_observed)
+df$applicant_sex_observed = as.factor(df$applicant_sex_observed)
+```
+
+```{r}
+# split into train and test set
+# df is the dataset after cleaning
+df = df[,-10]#delete open-end
+df = df[,-10]
+df = df[,-26] #delete denial reason
+df1 = na.omit(df)
+set.seed(123)
+size = sample(1:nrow(df1),size=(4/5)*nrow(df1))
+train = df1[size,]
+test = df1[-size,]
+```
+
+```{r}
+#tree to determine categorical variable importance
+library(tree)
+tree.mpg=tree(approved~purchaser_type + preapproval + loan_purpose + business_or_commercial_purpose + hoepa_status
+              + negative_amortization + interest_only_payment + balloon_payment + other_nonamortizing_features
+              + manufactured_home_secured_property_type + manufactured_home_land_property_interest
+              + applicant_ethnicity_observed + applicant_sex_observed, data=df1)
+
+plot(tree.mpg)
+text(tree.mpg,col=rainbow(5)[1:25],srt=30)
+```
+
+```{r}
+#logistic regression (all variable)
+View(train)
+df2 = train[,-1]
+df2 = df2[,-18]
+View(df2)
+mod1 = glm(approved ~., family = binomial, data = df2)
+summary(mod1)
+
+#(selected categorical variable from tree)
+mod2 = glm(approved ~ hoepa_status + purchaser_type + applicant_ethnicity_observed + loan_amount 
+           + loan_term + total_units + income, family = binomial, data = df2)
+summary(mod2)
+
+#+sex simply because we think it is important
+mod3 = glm(approved ~ hoepa_status + purchaser_type + applicant_ethnicity_observed + loan_amount 
+           + loan_term + total_units + income + applicant_sex_observed, family = binomial, data = df2)
+summary(mod3)
+#turns out not important
+```
+
+```{r echo = FALSE}
+
+test = test[,-1]
+test = test[,-18]
+View(test)
+# Compute the confusion matrix
+prob <- predict(mod1, test, type = "response")
+pred <- (prob > 0.5)
+confusion <- table(Truth = test$approved,
+                                 Predict = pred)
+addmargins(confusion)
+
+
+boston.logistic.prob <- predict(mod2, test, type = "response")
+boston.logistic.pred <- (boston.logistic.prob > 0.5)
+boston.logistic.confusion <- table(Truth   = test$approved,
+                                 Predict = boston.logistic.pred)
+addmargins(boston.logistic.confusion)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+#lasso (NA)
+set.seed(123)
+size = sample(1:nrow(train),size=(4/5)*nrow(train))
+train = train[size,]
+cv = train[-size,] #cross-validation
+
+library(glmnet)
+xmat=model.matrix(approved~.,data=train)[,-1] 
+grid=10^seq(10,-2,length=100)
+lasso.fit=glmnet(xmat,train$approved,alpha=1,lambda=grid) 
+plot(lasso.fit)
+
+#on test data(need to first split)
+xmat2=model.matrix(approved~.,data=cv)[,-1]
+lasso.fit2=glmnet(xmat2,cv$approved,alpha=1,lambda=grid)
+cv.lasso2=cv.glmnet(xmat2,cv$approved,alpha=1)
+#estimate coefficients
+bestlam2=cv.lasso2$lambda.min
+predict(lasso.fit2,s=bestlam2,type="coefficients") #This is the coefficients
+```
+
+```{r}
+library(dplyr)
+train_fac=train %>% mutate_if(is.character, as.factor)
+test_fac = test %>% mutate_if(is.character, as.factor)
+
+train_fac = train_fac[,-1]
+test_fac = test_fac[,-1]
+#random forest
+library(randomForest)
+rf = randomForest(approved ~.,data = train_fac, mtry = 5,importance =TRUE)
+importance(rf)
+
+pred = predict(rf, test_fac)
+table(pred, test$approved)
+
+824 / (824 + 4)
+1379 / (1379 + 72)
+```
+
+```{r}
+levels(test_fac$derived_loan_product_type) <- levels(train_fac$derived_loan_product_type)
+levels(test_fac$derived_dwelling_category) <- levels(train_fac$derived_dwelling_category)
+levels(test_fac$derived_ethnicity) <- levels(train_fac$derived_ethnicity)
+levels(test_fac$derived_race) <- levels(train_fac$derived_race)
+levels(test_fac$derived_sex) <- levels(train_fac$derived_sex)
+levels(test_fac$purchaser_type) <- levels(train_fac$purchaser_type)
+levels(test_fac$preapproval) <- levels(train_fac$preapproval)
+levels(test_fac$loan_purpose) <- levels(train_fac$loan_purpose)
+levels(test_fac$business_or_commercial_purpose) <- levels(train_fac$business_or_commercial_purpose)
+levels(test_fac$loan_amount) <- levels(train_fac$loan_amount)
+levels(test_fac$hoepa_status) <- levels(train_fac$hoepa_status)
+```
+
